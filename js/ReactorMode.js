@@ -122,6 +122,7 @@ class ReactorMode {
     if (!this.box) return;
     let s = this.s;
     for (let p of this.particles) p.step(this.box, s);
+    this.separate(s);
     if (this.state !== "running") return;
 
     let target = this.extentTarget();
@@ -145,6 +146,25 @@ class ReactorMode {
     if (this.finished >= target && this.events.length === 0) {
       this.state = "done";
       this.onDone();
+    }
+  }
+
+  // Empujón suave entre partículas que se solapan, para que no se amontonen.
+  separate(s) {
+    let ps = this.particles;
+    for (let i = 0; i < ps.length; i++) {
+      let a = ps[i];
+      if (a.busy) continue;
+      for (let j = i + 1; j < ps.length; j++) {
+        let b = ps[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let min = (a.ext.r + b.ext.r) * s * 0.9;
+        let d2 = dx * dx + dy * dy;
+        if (d2 >= min * min || d2 === 0) continue;
+        let d = Math.sqrt(d2), push = (min - d) * 0.06 / d;
+        a.x -= dx * push; a.y -= dy * push;
+        b.x += dx * push; b.y += dy * push;
+      }
     }
   }
 

@@ -249,6 +249,7 @@ class BalanceMode {
     } else if (st.balanced) { msg = i18n.t("✓ Ecuación ajustada: se conservan los átomos y la masa"); col = P.ok; }
     else { msg = i18n.t("✗ Sin ajustar: algún elemento no tiene los mismos átomos a cada lado"); col = P.bad; }
     noStroke(); fillA(col); textAlign(CENTER, CENTER); textSize(Math.max(11, L.fs * 0.72)); textStyle(BOLD);
+    if (textWidth(msg) > L.w) textSize(Math.max(8, textSize() * L.w / textWidth(msg)));
     text(msg, L.x + L.w / 2, L.y + L.eqH * 0.8);
     textStyle(NORMAL);
   }
@@ -279,10 +280,14 @@ class BalanceMode {
     let n = st.els.length;
     let top = y + 26, rowH = Math.min(34, (h - 34) / (n + 1));
     let fs = constrain(rowH * 0.5, 10, 15);
-    let cEl = x + 12, cR = x + w * 0.42, cP = x + w * 0.68, cOk = x + w - 18;
-    textSize(Math.min(fs * 0.8, 11)); fillA(P.muted); textAlign(CENTER, CENTER);
-    text(i18n.t("Reactivos"), cR, top + rowH / 2);
-    text(i18n.t("Productos"), cP, top + rowH / 2);
+    let cEl = x + 12, cR = x + w * 0.46, cP = x + w * 0.73, cOk = x + w - 14;
+    fillA(P.muted); textAlign(CENTER, CENTER);
+    for (let [t, cx] of [[i18n.t("Reactivos"), cR], [i18n.t("Productos"), cP]]) {
+      textSize(Math.min(fs * 0.8, 11));
+      let maxW = w * 0.25;
+      if (textWidth(t) > maxW) textSize(Math.max(7, textSize() * maxW / textWidth(t)));
+      text(t, cx, top + rowH / 2);
+    }
     textStyle(NORMAL);
     st.els.forEach((el, i) => {
       let ry = top + rowH * (i + 1.5);
