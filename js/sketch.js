@@ -145,8 +145,8 @@ function configureAmountSliders() {
     let sl = document.getElementById("ui-r" + (i + 1) + "-slider");
     sl.min = 1;
     sl.max = Math.min(MAX_STEPS, Math.floor(MAX_AMOUNT / nu));
-    // Por defecto: el segundo reactivo en exceso en el modo limitante
-    let def = mode === "limit" ? (i === 0 ? 2 : 3) : (i === 0 ? 2 : 4);
+    // Por defecto, en el modo limitante: 8 H₂ + 5 O₂, hay más H₂ pero es el limitante
+    let def = mode === "limit" ? (i === 0 ? 4 : 5) : (i === 0 ? 2 : 4);
     sl.value = Math.min(def, sl.max);
     document.getElementById("r" + (i + 1) + "-label").innerHTML = formulaHTML(f);
   });

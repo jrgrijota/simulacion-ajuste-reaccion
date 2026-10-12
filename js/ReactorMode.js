@@ -453,3 +453,112 @@ function drawTable(x, y, w, cols, rows, rowH, fs, emptyMsg) {
     r.forEach((t, i) => text(t, xs[i] + 4, ry + rowH / 2));
   });
 }
+
+// ─── Panel del modo reactivo limitante y rendimiento ────────────────────────
+ReactorMode.prototype.drawSideLimit = function (S) {
+  let P = pal(), rx = this.rx;
+  panelBox(S);
+  let u = massUnit();
+  let x = S.x + 12, w = S.w - 24, y = S.y + 10;
+  let fs = constrain(S.w * 0.032, 11, 14);
+  let list = this.speciesList(), a = this.amounts();
+  let nR = rx.r.length;
+  let xiMax = this.extentMax(), xiT = this.extentTarget();
+  let theo = list.map((f, i) => i < nR ? this.n0[i] : rx.p[i - nR][1] * xiMax);
+
+  noStroke(); fillA(P.muted); textSize(10); textStyle(BOLD); textAlign(LEFT, TOP);
+  text(i18n.t("REACTIVO LIMITANTE Y RENDIMIENTO"), x, y);
+  textStyle(NORMAL);
+  y += 20;
+
+  // Tabla inicial / cambio / final
+  let cols = [
+    [i18n.t("Sustancia"), 0.2], [i18n.t("Inicial"), 0.18], [i18n.t("Cambio"), 0.2],
+    [i18n.t("Final"), 0.18], [i18n.t("Masa final") + " (" + u + ")", 0.24],
+  ];
+  let rows = list.map((f, i) => {
+    let ini = i < nR ? this.n0[i] : 0;
+    let d = a[i] - ini;
+    return [formulaUnicode(f), amountText(ini), (d > 0 ? "+" : d < 0 ? "−" : "") + amountText(Math.abs(d)),
+            amountText(a[i]), i18n.num(a[i] * molarMass(f), 2)];
+  });
+  let rowH = fs * 1.6;
+  drawTable(x, y, w, cols, rows, rowH, fs * 0.85);
+  y += rowH * (rows.length + 1) + 12;
+
+  // Barras: relleno = cantidad ahora; contorno = inicial (reactivos) o teórica (productos)
+  let maxN = Math.max(1, ...theo, ...a);
+  let barH = constrain((S.y + S.h - y) * 0.06, 10, 18);
+  let labelW = fs * 3.4;
+  list.forEach((f, i) => {
+    let by = y + i * (barH + 7);
+    drawFormula(f, x, by + barH / 2, fs * 0.9, LEFT, { col: P.text });
+    let bx = x + labelW, bw = w - labelW - fs * 5.5;
+    noStroke(); fillA(P.series[i % 4], 220);
+    rect(bx, by, bw * a[i] / maxN, barH, 3);
+    noFill(); strokeA(P.series[i % 4]); strokeWeight(1.2);
+    drawingContext.setLineDash([4, 3]);
+    rect(bx, by, bw * theo[i] / maxN, barH, 3);
+    drawingContext.setLineDash([]);
+    noStroke(); fillA(P.muted); textSize(fs * 0.8); textAlign(LEFT, CENTER);
+    let tag = i < nR ? i18n.t("de {n}", { n: amountText(theo[i]) }) : i18n.t("de {n} teór.", { n: amountText(theo[i]) });
+    text(amountText(a[i]) + " " + tag, bx + bw + 6, by + barH / 2);
+  });
+  y += list.length * (barH + 7) + 10;
+
+  // Resultados
+  let lines = [];
+  let done = this.state === "done";
+  let lim = this.limiting();
+  let fq = (i) => formulaUnicode(list[i]);
+  if (!done) {
+    lines.push([i18n.t("Reactivo limitante:") + " ?", P.muted]);
+    lines.push([this.state === "running" ? i18n.t("Reaccionando…") : i18n.t("Predice qué reactivo se agota y pulsa «Reaccionar»"), P.muted]);
+  } else {
+    if (lim === 2) {
+      lines.push([i18n.t("Proporción estequiométrica: no hay reactivo limitante ni en exceso"), P.accent]);
+    } else {
+      let ex = 1 - lim;
+      let need = rx.r[ex][1] * xiMax;
+      lines.push([i18n.t("Reactivo limitante: {f}", { f: fq(lim) }) +
+                  (a[lim] > 0 ? " " + i18n.t("(con un 100 % se agotaría)") : " " + i18n.t("(se agota)")), P.accent]);
+      lines.push([i18n.t("En exceso: {f} (solo hacen falta {n} de {t})", { f: fq(ex), n: amountText(need), t: amountText(this.n0[ex]) }), P.text]);
+    }
+    let fp = list[nR], nuP = rx.p[0][1];
+    let th = nuP * xiMax, real = a[nR];
+    lines.push([i18n.t("Producto teórico: {n} {f} = {m} {u}", { n: amountText(th), f: formulaUnicode(fp), m: i18n.num(th * molarMass(fp), 2), u }), P.text]);
+    lines.push([i18n.t("Producto real: {n} {f} = {m} {u}", { n: amountText(real), f: formulaUnicode(fp), m: i18n.num(real * molarMass(fp), 2), u }), P.text]);
+    let got = th ? Math.round(100 * real / th) : 0;
+    let rLine = i18n.t("Rendimiento = real / teórico · 100 = {p} %", { p: got });
+    if (th && got !== this.yieldPct) rLine += " " + i18n.t("(se redondea a partículas enteras)");
+    lines.push([rLine, P.ok]);
+    if (this.prediction >= 0) {
+      let ok = this.prediction === lim;
+      lines.push([ok ? i18n.t("✓ Tu predicción era correcta") : i18n.t("✗ Tu predicción no era correcta"), ok ? P.ok : P.bad]);
+    }
+  }
+  textSize(fs * 0.92); textAlign(LEFT, TOP);
+  for (let [t, col] of lines) {
+    if (y > S.y + S.h - fs * 1.2) break;
+    noStroke(); fillA(col); textStyle(col === P.accent || col === P.ok ? BOLD : NORMAL);
+    text(t, x, y, w);
+    let nLines = Math.ceil(textWidth(t) / w);
+    y += fs * 1.35 * Math.max(1, nLines) + 2;
+  }
+  textStyle(NORMAL);
+};
+
+ReactorMode.prototype.statsLimit = function (a, m0, mp) {
+  let rx = this.rx, nR = rx.r.length, u = massUnit();
+  let done = this.state === "done";
+  let lim = this.limiting();
+  let fp = rx.p[0][0], th = rx.p[0][1] * this.extentMax();
+  let limTxt = !done ? "?" : lim === 2 ? i18n.t("ninguno") : formulaHTML(rx.r[lim][0]);
+  let got = th ? Math.round(100 * a[nR] / th) : 0;
+  return [
+    [i18n.t("Reactivo limitante"), limTxt],
+    [i18n.t("Masa total"), i18n.num(m0, 2) + " " + u],
+    [i18n.t("Producto teórico"), amountText(th) + " " + formulaHTML(fp)],
+    [i18n.t("Rendimiento"), done ? got + " %" : "—"],
+  ];
+};
