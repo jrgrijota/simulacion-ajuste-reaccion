@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark" data-ui="compact">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulación: Ajuste de Reacciones</title>
+  <script src="js/i18n-en.js"></script>
+  <script src="js/i18n-ca.js"></script>
+  <script src="js/i18n-eu.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/vendor/p5.min.js"></script>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("sim-ui-theme-ar");
+        var d = localStorage.getItem("sim-ui-density-ar");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+        if (d) document.documentElement.setAttribute("data-ui", d);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    :root {
+      --bg-body: #0e1018;
+      --bg-container: #161a26;
+      --bg-card: #1e2334;
+      --bg-card-hover: #252b40;
+      --bg-input: #11141f;
+      --border-main: #2b3147;
+      --border-strong: #394264;
+      --border-canvas: #3f476a;
+      --text-main: #eef2f8;
+      --text-muted: #9aa6bd;
+      --text-label: #cdd6e6;
+      --accent: #3b82f6;
+      --accent-strong: #2563eb;
+      --accent-soft: rgba(59,130,246,0.14);
+      --success: #10b981;
+      --success-hover: #059669;
+      --btn-secondary: #2c3450;
+      --btn-secondary-hover: #3a456a;
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.18);
+      --shadow-pop: 0 12px 28px -6px rgba(0,0,0,0.45);
+
+      --panel-w: 318px;
+      --panel-gap: 9px;
+      --card-pad: 12px;
+      --radius: 10px;
+      --logo-size: 38px;
+      --fs-title: 15.5px;
+      --fs-subtitle: 11.5px;
+      --fs-h2: 11px;
+      --fs-trigger: 11px;
+      --fs-label: 12px;
+      --fs-readout: 11.5px;
+      --fs-input: 13px;
+      --fs-hint: 11px;
+      --fs-info-label: 10.5px;
+      --fs-info: 12px;
+      --group-mb: 10px;
+    }
+
+    [data-theme="light"] {
+      --bg-body: #c8d0da;
+      --bg-container: #dde3ec;
+      --bg-card: #e8edf5;
+      --bg-card-hover: #d4dbe7;
+      --bg-input: #cdd5e0;
+      --border-main: #b0baca;
+      --border-strong: #8fa0b5;
+      --border-canvas: #8fa0b5;
+      --text-main: #1a2236;
+      --text-muted: #4a5a72;
+      --text-label: #2a3a55;
+      --accent: #1d57c8;
+      --accent-strong: #1446a8;
+      --accent-soft: rgba(29,87,200,0.12);
+      --success: #0e8a5f;
+      --success-hover: #0b7050;
+      --btn-secondary: #c2ccda;
+      --btn-secondary-hover: #b0bccd;
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.08);
+      --shadow-pop: 0 12px 28px -6px rgba(0,0,0,0.18);
+    }
+
+    [data-theme="high-contrast"] {
+      --bg-body: #000000;
+      --bg-container: #000000;
+      --bg-card: #111111;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0a0a0a;
+      --border-main: #ffff00;
+      --border-strong: #ffff00;
+      --border-canvas: #ffff00;
+      --text-main: #ffffff;
+      --text-muted: #cccccc;
+      --text-label: #ffffff;
+      --accent: #ffff00;
+      --accent-strong: #ffee00;
+      --accent-soft: rgba(255,255,0,0.18);
+      --success: #00ff88;
+      --success-hover: #00dd77;
+      --btn-secondary: #222200;
+      --btn-secondary-hover: #333300;
+      --shadow-card: 0 0 0 1px #ffff00;
+      --shadow-pop: 0 0 0 2px #ffff00;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      display: flex;
+      align-items: stretch;
+      height: 100dvh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--panel-w);
+      flex-shrink: 0;
+      background: var(--bg-container);
+      border-right: 1px solid var(--border-main);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar-inner {
+      padding: 14px 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--panel-gap);
+    }
+
+    /* ── HEADER ── */
+    .sim-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 2px;
+    }
+    .sim-logo {
+      width: var(--logo-size); height: var(--logo-size);
+      border-radius: 9px;
+      background: var(--accent-soft);
+      border: 1.5px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .sim-title { font-size: var(--fs-title); font-weight: 700; line-height: 1.25; }
+    .sim-subtitle { font-size: var(--fs-subtitle); color: var(--text-muted); margin-top: 2px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+    .card-trigger {
+      width: 100%; background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px var(--card-pad);
+      color: var(--text-muted);
+      font-size: var(--fs-trigger);
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .card-trigger:hover { color: var(--text-main); }
+    .card-chevron { font-size: 10px; transition: transform 0.2s; }
+    .card.is-expanded .card-chevron { transform: rotate(180deg); }
+    .card-body { display: none; padding: 0 var(--card-pad) var(--card-pad); }
+    .card.is-expanded .card-body { display: block; }
+
+    /* ── CONTROL GROUPS ── */
+    .control-group { margin-bottom: var(--group-mb); }
+    .control-group:last-child { margin-bottom: 0; }
+
+    .field-label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: var(--fs-label); font-weight: 600; color: var(--text-label);
+      margin-bottom: 5px;
+    }
+    .field-readout {
+      font-size: var(--fs-readout); font-weight: 500; color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .field-hint { font-size: var(--fs-hint); color: var(--text-muted); margin-top: 4px; }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 5px; border-radius: 3px;
+      background: var(--border-strong); outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent); border: 2px solid var(--bg-card);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent); border: 2px solid var(--bg-card);
+    }
+
+    /* ── BOTONES ── */
+    .btn-primary {
+      width: 100%; padding: 8px 0;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 7px; cursor: pointer;
+      font-size: var(--fs-input); font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: var(--accent-strong); }
+
+    .btn-secondary {
+      width: 100%; padding: 7px 0;
+      background: var(--btn-secondary); color: var(--text-label);
+      border: 1px solid var(--border-main);
+      border-radius: 7px; cursor: pointer;
+      font-size: var(--fs-input); font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: var(--btn-secondary-hover); }
+
+    /* ── TOGGLE ON/OFF ── */
+    .btn-emission-toggle {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--btn-secondary);
+      color: var(--text-label);
+      border: 1px solid var(--border-main);
+      border-radius: 8px; cursor: pointer;
+      font-size: var(--fs-label); font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .btn-emission-toggle:hover { background: var(--btn-secondary-hover); }
+    .toggle-pill {
+      width: 38px; height: 20px; border-radius: 12px;
+      position: relative; flex-shrink: 0;
+      background: var(--border-strong);
+      transition: background 0.2s;
+    }
+    .toggle-pill::after {
+      content: "";
+      position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff;
+      transition: left 0.2s;
+    }
+    .btn-emission-toggle.is-off .toggle-pill { background: var(--border-strong); }
+    .btn-emission-toggle.is-off .toggle-pill::after { left: 3px; }
+    .btn-emission-toggle.is-on  .toggle-pill { background: var(--success); }
+    .btn-emission-toggle.is-on  .toggle-pill::after { left: 21px; }
+
+    /* ── ESTADÍSTICAS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .stat-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border-main);
+      border-radius: 7px;
+      padding: 7px 10px;
+    }
+    .stat-label {
+      font-size: var(--fs-info-label); color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .stat-value {
+      font-size: 18px; font-weight: 700; color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-item.accent-a .stat-value { color: #4f8ef7; }
+    .stat-item.accent-b .stat-value { color: #f7823c; }
+    .stat-item.accent-c .stat-value { color: #34c782; }
+    .stat-item.accent-r .stat-value { color: var(--success); }
+
+    /* ── SECCIÓN DE LEYENDA ── */
+    .legend-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: var(--fs-label); color: var(--text-label);
+      margin-bottom: 5px;
+    }
+    .legend-dot {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── INFO COLLAPSIBLE ── */
+    .info-section { margin-top: 2px; }
+    .info-section p {
+      font-size: var(--fs-info); color: var(--text-muted);
+      line-height: 1.55; margin-bottom: 7px;
+    }
+    .info-section p:last-child { margin-bottom: 0; }
+    .info-section b { color: var(--text-label); }
+
+    /* ── DROPDOWN DE CONFIGURACIÓN ── */
+    .toolbar-row {
+      display: flex; justify-content: flex-end; margin-bottom: -4px;
+    }
+    #ui-dropdown-container { position: relative; }
+    #ui-dropdown-trigger {
+      width: 30px; height: 30px;
+      background: var(--bg-card); border: 1px solid var(--border-main);
+      border-radius: 7px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--text-muted);
+      transition: background 0.15s;
+    }
+    #ui-dropdown-trigger:hover { background: var(--bg-card-hover); color: var(--text-main); }
+    .dropdown-card {
+      display: none;
+      position: absolute; right: 0; top: 36px;
+      width: 210px;
+      background: var(--bg-container);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-pop);
+      padding: 12px;
+      z-index: 100;
+    }
+    #ui-dropdown-container.is-active .dropdown-card { display: block; }
+    .dropdown-label {
+      font-size: var(--fs-info-label); font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    select {
+      width: 100%; padding: 6px 8px;
+      background: var(--bg-input); color: var(--text-main);
+      border: 1px solid var(--border-strong); border-radius: 6px;
+      font-size: var(--fs-input); cursor: pointer; outline: none;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* ── CANVAS ── */
+    #canvas-holder {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    #canvas-holder canvas { display: block; }
+
+    /* ── PANTALLAS ESTRECHAS (móvil) ──
+       La simulación arriba a todo el ancho y el panel debajo. El lienzo toma el
+       tamaño de #canvas-holder y computeLayout() reparte cámara y gráfica. */
+    @media (max-width: 760px) {
+      html, body { height: auto; overflow: auto; }
+      body { flex-direction: column; }
+      #canvas-holder { order: -1; flex: none; width: 100%; height: clamp(360px, 68svh, 640px); }
+      .sidebar { width: 100%; border-right: none; border-top: 1px solid var(--border-main); overflow: visible; }
+    }
+
+    /* ── COEFICIENTES (modo ajuste) ── */
+    .coef-side {
+      font-size: var(--fs-info-label); font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin: 2px 0 5px;
+    }
+    .coef-side + .coef-row { margin-top: 0; }
+    .coef-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin-bottom: 6px;
+    }
+    .coef-formula {
+      font-size: 15px; font-weight: 700; color: var(--text-main);
+      min-width: 0;
+    }
+    .coef-formula sub { font-size: 0.7em; }
+    .coef-ctrl { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .coef-btn {
+      width: 30px; height: 30px; border-radius: 7px;
+      background: var(--btn-secondary); color: var(--text-main);
+      border: 1px solid var(--border-main);
+      font-size: 17px; font-weight: 700; line-height: 1; cursor: pointer;
+    }
+    .coef-btn:hover { background: var(--btn-secondary-hover); }
+    .coef-btn:disabled { opacity: 0.35; cursor: default; }
+    .coef-val {
+      width: 30px; text-align: center;
+      font-size: 17px; font-weight: 700; color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .btn-row { display: flex; gap: 8px; }
+    .btn-row > * { flex: 1; }
+    .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.45; cursor: default; }
+    .stat-value.is-small { font-size: 14px; }
+    .stat-value sub { font-size: 0.7em; }
+    .legend-dot { border: 1px solid rgba(0,0,0,0.35); }
+    .legend-sym { font-weight: 700; width: 22px; }
+  </style>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script src="js/estadisticas.js" data-sim="sim-ajuste-reaccion"></script>
+</head>
+<body>
+
+<!-- ── SIDEBAR ─────────────────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-inner">
+
+    <!-- Header -->
+    <div class="sim-header">
+      <div class="sim-logo">⚖️</div>
+      <div>
+        <div class="sim-title">Ajuste de Reacciones</div>
+        <div class="sim-subtitle">Lavoisier · Proust · Reactivo limitante</div>
+      </div>
+    </div>
+
+    <!-- Configuración (engranaje) -->
+    <div class="toolbar-row">
+      <div id="ui-dropdown-container">
+        <button id="ui-dropdown-trigger" title="Configuración de visualización">⚙</button>
+        <div class="dropdown-card">
+          <div class="dropdown-label">Apariencia</div>
+          <select id="ui-theme-select">
+            <option value="dark">Oscuro</option>
+            <option value="light">Claro</option>
+            <option value="high-contrast">Alto Contraste</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modo y reacción -->
+    <div class="card is-expanded">
+      <button class="card-trigger">
+        Modo
+        <span class="card-chevron">▼</span>
+      </button>
+      <div class="card-body">
+        <div class="control-group">
+          <select id="ui-mode-select">
+            <option value="balance">Ajuste (Lavoisier)</option>
+            <option value="proust">Proporciones definidas (Proust)</option>
+            <option value="limit">Reactivo limitante y rendimiento</option>
+          </select>
+          <p class="field-hint" id="mode-hint-balance">Cambia los coeficientes hasta que haya los mismos átomos de cada elemento a los dos lados.</p>
+          <p class="field-hint" id="mode-hint-proust" style="display:none;">Forma un compuesto con distintas cantidades de reactivos: la proporción en masa de sus elementos no cambia.</p>
+          <p class="field-hint" id="mode-hint-limit" style="display:none;">Elige las cantidades iniciales: un reactivo se agota antes y decide cuánto producto se forma.</p>
+        </div>
+        <div class="control-group">
+          <div class="field-label">Reacción</div>
+          <select id="ui-reaction-select"></select>
+        </div>
+        <div class="control-group">
+          <div class="field-label">Cada partícula representa</div>
+          <select id="ui-scale-select">
+            <option value="particle">Una molécula o átomo (masa en u)</option>
+            <option value="mol">Un mol (masa en g)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coeficientes (modo ajuste) -->
+    <div class="card is-expanded" id="card-coefs">
+      <button class="card-trigger">
+        Coeficientes
+        <span class="card-chevron">▼</span>
+      </button>
+      <div class="card-body">
+        <div id="coef-rows"></div>
+        <div class="control-group" style="margin-top:8px;">
+          <button id="ui-live-toggle" class="btn-emission-toggle is-on">
+            <span>Recuento en vivo</span>
+            <span class="toggle-pill"></span>
+          </button>
+          <p class="field-hint">Apágalo para que el alumnado ajuste primero y compruebe después.</p>
+        </div>
+        <div class="control-group btn-row" id="group-check" style="display:none;">
+          <button id="ui-btn-check" class="btn-primary">✓ Comprobar</button>
+        </div>
+        <div class="control-group btn-row">
+          <button id="ui-btn-animate" class="btn-primary">▶ Ver la reacción</button>
+          <button id="ui-btn-coef-reset" class="btn-secondary">↺ Todo a 1</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cantidades (modos reactor) -->
+    <div class="card is-expanded" id="card-amounts" style="display:none;">
+      <button class="card-trigger">
+        Cantidades iniciales
+        <span class="card-chevron">▼</span>
+      </button>
+      <div class="card-body">
+        <div class="control-group">
+          <div class="field-label">
+            <span id="r1-label">—</span>
+            <span class="field-readout" id="r1-val">—</span>
+          </div>
+          <input type="range" id="ui-r1-slider" min="1" max="12" value="4" step="1">
+        </div>
+        <div class="control-group">
+          <div class="field-label">
+            <span id="r2-label">—</span>
+            <span class="field-readout" id="r2-val">—</span>
+          </div>
+          <input type="range" id="ui-r2-slider" min="1" max="12" value="4" step="1">
+          <p class="field-hint" id="amount-hint">Los deslizadores avanzan de coeficiente en coeficiente.</p>
+        </div>
+        <div class="control-group" id="group-yield">
+          <div class="field-label">
+            Rendimiento
+            <span class="field-readout" id="yield-val">100 %</span>
+          </div>
+          <input type="range" id="ui-yield-slider" min="10" max="100" value="100" step="5">
+          <p class="field-hint">Porcentaje del producto teórico que se obtiene de verdad.</p>
+        </div>
+        <div class="control-group" id="group-predict">
+          <div class="field-label">Tu predicción: ¿qué reactivo se agota?</div>
+          <select id="ui-predict-select"></select>
+        </div>
+        <div class="control-group btn-row">
+          <button id="ui-btn-run" class="btn-primary">▶ Reaccionar</button>
+          <button id="ui-btn-reset" class="btn-secondary">↺ Reiniciar</button>
+        </div>
+        <div class="control-group" id="group-clear">
+          <button id="ui-btn-clear" class="btn-secondary">🗑 Borrar tabla de experimentos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="card is-expanded">
+      <button class="card-trigger">
+        Estadísticas
+        <span class="card-chevron">▼</span>
+      </button>
+      <div class="card-body">
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-label" id="stat-1-label">—</div><div class="stat-value is-small" id="stat-1">—</div></div>
+          <div class="stat-item"><div class="stat-label" id="stat-2-label">—</div><div class="stat-value is-small" id="stat-2">—</div></div>
+          <div class="stat-item"><div class="stat-label" id="stat-3-label">—</div><div class="stat-value is-small" id="stat-3">—</div></div>
+          <div class="stat-item"><div class="stat-label" id="stat-4-label">—</div><div class="stat-value is-small" id="stat-4">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="card is-expanded">
+      <button class="card-trigger">
+        Leyenda
+        <span class="card-chevron">▼</span>
+      </button>
+      <div class="card-body" id="legend-rows"></div>
+    </div>
+
+    <!-- Información -->
+    <div class="card" id="ui-panel-info">
+      <button class="card-trigger" id="ui-info-trigger">
+        ¿Cómo funciona?
+        <span class="card-chevron">▼</span>
+      </button>
+      <div class="card-body">
+        <div class="info-section">
+          <p data-i18n="info-1">Cada bolita es un <b>átomo</b> y cada grupo de bolitas unidas, una <b>molécula</b> (o la unidad fórmula de un compuesto iónico). En una reacción los átomos <b>no aparecen ni desaparecen</b>: solo se separan y se vuelven a unir de otra manera.</p>
+          <p data-i18n="info-2"><b>Ajuste (Lavoisier).</b> Una ecuación está ajustada cuando hay el mismo número de átomos de cada elemento en reactivos y productos. Solo se cambian los <b>coeficientes</b> (cuántas partículas hay), nunca los subíndices (qué sustancia es). Si los átomos se conservan, la masa también: la balanza queda equilibrada.</p>
+          <p data-i18n="info-3"><b>Proporciones definidas (Proust).</b> Por mucho que cambien las cantidades iniciales, el compuesto se forma siempre con la misma proporción en masa de sus elementos. Lo que sobra queda sin reaccionar. Cada experimento se anota en la tabla y en la gráfica.</p>
+          <p data-i18n="info-4"><b>Reactivo limitante y rendimiento.</b> El reactivo que se agota primero limita el producto que se puede formar (producto teórico); el otro queda en exceso. Con un rendimiento menor del 100 %, solo se obtiene esa parte del producto teórico.</p>
+          <p data-i18n="info-5">Con «Un mol (masa en g)», cada partícula dibujada representa 6,022·10<sup>23</sup> partículas y las masas se dan en gramos.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+<!-- ── CANVAS ──────────────────────────────────────────────────────────── -->
+<div id="canvas-holder"></div>
+
+<script src="js/chem.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/BalanceMode.js"></script>
+<script src="js/ReactorMode.js"></script>
+<script src="js/sketch.js"></script>
+
+<script>
+  // Card toggles
+  document.querySelectorAll(".card-trigger").forEach(btn => {
+    if (btn.id === "ui-info-trigger") return;
+    btn.addEventListener("click", () => {
+      btn.closest(".card").classList.toggle("is-expanded");
+    });
+  });
+</script>
+</body>
+</html>
