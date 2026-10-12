@@ -320,7 +320,6 @@ class ReactorMode {
     fillA(P.text); textSize(fs); textAlign(LEFT, CENTER); textStyle(BOLD);
     let lx = x;
     let seg = (t, col) => { fillA(col || P.text); text(t, lx, y + fs * 0.6); lx += textWidth(t); };
-    seg(i18n.t("En el") + " ");
     lx += drawFormula(fp, lx, y + fs * 0.6, fs, LEFT, { col: P.accent });
     seg(":  m(" + rx.y + ") / m(" + rx.x + ") = ");
     seg(i18n.num(ratio, 2), P.ok);
@@ -410,8 +409,8 @@ class ReactorMode {
       return [
         [i18n.t("Masa total"), i18n.num(m0, 2) + " " + u],
         [i18n.t("Compuesto formado"), i18n.num(mp, 2) + " " + u],
-        [i18n.t("Queda de") + " " + formulaUnicode(list[0]), fmt(0)],
-        [i18n.t("Queda de") + " " + formulaUnicode(list[1]), fmt(1)],
+        [i18n.t("Queda de {f}", { f: formulaUnicode(list[0]) }), fmt(0)],
+        [i18n.t("Queda de {f}", { f: formulaUnicode(list[1]) }), fmt(1)],
       ];
     }
     return this.statsLimit ? this.statsLimit(a, m0, mp) : [];
@@ -438,11 +437,18 @@ function drawTable(x, y, w, cols, rows, rowH, fs, emptyMsg) {
   let xs = [], acc = x;
   for (let [, f] of cols) { xs.push(acc); acc += f * w; }
   noStroke(); fillA(P.panel2); rect(x, y, w, rowH, 4);
-  fillA(P.muted); textSize(fs); textStyle(BOLD); textAlign(LEFT, CENTER);
-  cols.forEach(([t], i) => text(t, xs[i] + 4, y + rowH / 2));
+  // Texto que encoge si no cabe en su columna
+  let cell = (t, i, cy) => {
+    let cw = cols[i][1] * w - 6;
+    textSize(fs);
+    if (textWidth(t) > cw) textSize(Math.max(7, fs * cw / textWidth(t)));
+    text(t, xs[i] + 4, cy);
+  };
+  fillA(P.muted); textStyle(BOLD); textAlign(LEFT, CENTER);
+  cols.forEach(([t], i) => cell(t, i, y + rowH / 2));
   textStyle(NORMAL);
   if (!rows.length && emptyMsg) {
-    fillA(P.muted); textAlign(CENTER, CENTER);
+    fillA(P.muted); textAlign(CENTER, CENTER); textSize(fs);
     text(emptyMsg, x + w / 2, y + rowH * 1.6);
     return;
   }
@@ -450,7 +456,7 @@ function drawTable(x, y, w, cols, rows, rowH, fs, emptyMsg) {
     let ry = y + rowH * (j + 1);
     if (j % 2) { noStroke(); fillA(P.panel2, 110); rect(x, ry, w, rowH); }
     fillA(P.text); textAlign(LEFT, CENTER);
-    r.forEach((t, i) => text(t, xs[i] + 4, ry + rowH / 2));
+    r.forEach((t, i) => cell(t, i, ry + rowH / 2));
   });
 }
 

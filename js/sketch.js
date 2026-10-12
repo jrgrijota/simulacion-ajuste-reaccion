@@ -112,9 +112,9 @@ function buildCoefRows() {
     row.innerHTML =
       '<span class="coef-formula">' + formulaHTML(f) + '</span>' +
       '<span class="coef-ctrl">' +
-      '<button class="coef-btn" data-d="-1" aria-label="' + i18n.t("Quitar una") + " " + f + '">−</button>' +
+      '<button class="coef-btn" data-d="-1" aria-label="' + i18n.t("Quitar una partícula de {f}", { f }) + '">−</button>' +
       '<span class="coef-val" id="coef-' + i + '">' + m.coefs[i] + '</span>' +
-      '<button class="coef-btn" data-d="1" aria-label="' + i18n.t("Añadir una") + " " + f + '">+</button>' +
+      '<button class="coef-btn" data-d="1" aria-label="' + i18n.t("Añadir una partícula de {f}", { f }) + '">+</button>' +
       '</span>';
     row.querySelectorAll(".coef-btn").forEach(b => b.addEventListener("click", () => {
       m.setCoef(i, m.coefs[i] + parseInt(b.dataset.d));
