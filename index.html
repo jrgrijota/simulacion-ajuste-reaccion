@@ -592,7 +592,6 @@
 <script>
   // Card toggles
   document.querySelectorAll(".card-trigger").forEach(btn => {
-    if (btn.id === "ui-info-trigger") return;
     btn.addEventListener("click", () => {
       btn.closest(".card").classList.toggle("is-expanded");
     });
