@@ -266,7 +266,8 @@ class BalanceMode {
     let parts = [];
     if (fl.leftover.length) parts.push(i18n.t("Sobran átomos: {a}", { a: cnt(fl.leftover) }));
     if (fl.missing.length) parts.push(i18n.t("faltan átomos: {a}", { a: cnt(fl.missing) }));
-    return ["✗ " + parts.join(" · "), P.bad];
+    let msg = parts.join(" · ");
+    return ["✗ " + msg.charAt(0).toUpperCase() + msg.slice(1), P.bad];
   }
 
   drawAtomTable(L, st, show) {
