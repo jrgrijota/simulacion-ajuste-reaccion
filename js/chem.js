@@ -2,21 +2,21 @@
 // Elementos, plantillas de las partículas (posición de cada átomo en unidades de
 // «enlace») y reacciones de cada modo. Todo lo demás se calcula a partir de aquí.
 
-// Masas atómicas (u) con dos decimales, como en la tabla periódica escolar.
+// Masas atómicas (u) de la IUPAC; en pantalla se redondean a dos decimales.
 // r: radio de dibujo relativo; col: color de relleno (aproximadamente CPK).
 const ELEMENTS = {
-  H:  { name: "Hidrógeno", mass: 1.01,  r: 0.34, col: [236, 240, 246], ink: [30, 35, 45] },
-  C:  { name: "Carbono",   mass: 12.01, r: 0.46, col: [88, 96, 110],   ink: [245, 245, 245] },
-  N:  { name: "Nitrógeno", mass: 14.01, r: 0.44, col: [59, 110, 246],  ink: [255, 255, 255] },
-  O:  { name: "Oxígeno",   mass: 16.00, r: 0.44, col: [232, 64, 64],   ink: [255, 255, 255] },
-  Na: { name: "Sodio",     mass: 22.99, r: 0.60, col: [167, 139, 250], ink: [30, 20, 60] },
-  Mg: { name: "Magnesio",  mass: 24.31, r: 0.56, col: [45, 212, 191],  ink: [10, 50, 45] },
-  Al: { name: "Aluminio",  mass: 26.98, r: 0.56, col: [214, 160, 196], ink: [60, 20, 45] },
-  S:  { name: "Azufre",    mass: 32.07, r: 0.54, col: [250, 204, 21],  ink: [70, 55, 0] },
-  Cl: { name: "Cloro",     mass: 35.45, r: 0.54, col: [34, 197, 94],   ink: [5, 45, 20] },
-  K:  { name: "Potasio",   mass: 39.10, r: 0.66, col: [192, 38, 211],  ink: [255, 255, 255] },
-  Ca: { name: "Calcio",    mass: 40.08, r: 0.62, col: [163, 230, 53],  ink: [35, 55, 0] },
-  Fe: { name: "Hierro",    mass: 55.85, r: 0.56, col: [234, 118, 40],  ink: [255, 255, 255] },
+  H:  { name: "Hidrógeno", mass: 1.008,  r: 0.34, col: [236, 240, 246], ink: [30, 35, 45] },
+  C:  { name: "Carbono",   mass: 12.011, r: 0.46, col: [88, 96, 110],   ink: [245, 245, 245] },
+  N:  { name: "Nitrógeno", mass: 14.007, r: 0.44, col: [59, 110, 246],  ink: [255, 255, 255] },
+  O:  { name: "Oxígeno",   mass: 15.999, r: 0.44, col: [232, 64, 64],   ink: [255, 255, 255] },
+  Na: { name: "Sodio",     mass: 22.990, r: 0.60, col: [167, 139, 250], ink: [30, 20, 60] },
+  Mg: { name: "Magnesio",  mass: 24.305, r: 0.56, col: [45, 212, 191],  ink: [10, 50, 45] },
+  Al: { name: "Aluminio",  mass: 26.982, r: 0.56, col: [214, 160, 196], ink: [60, 20, 45] },
+  S:  { name: "Azufre",    mass: 32.06,  r: 0.54, col: [250, 204, 21],  ink: [70, 55, 0] },
+  Cl: { name: "Cloro",     mass: 35.45,  r: 0.54, col: [34, 197, 94],   ink: [5, 45, 20] },
+  K:  { name: "Potasio",   mass: 39.098, r: 0.66, col: [192, 38, 211],  ink: [255, 255, 255] },
+  Ca: { name: "Calcio",    mass: 40.078, r: 0.62, col: [163, 230, 53],  ink: [35, 55, 0] },
+  Fe: { name: "Hierro",    mass: 55.845, r: 0.56, col: [234, 118, 40],  ink: [255, 255, 255] },
 };
 
 // Plantillas: [símbolo, x, y]. Las sustancias iónicas y los metales se dibujan
