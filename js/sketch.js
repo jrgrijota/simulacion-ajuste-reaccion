@@ -32,6 +32,24 @@ function setup() {
   syncTheme();
   buildReactionSelect();
   rebuild();
+  // Ajustes de la dirección (fichas del alumnado): ver js/parametros.js.
+  // «reactivo1» y «reactivo2» son cantidades de cada reactivo (partículas o mol),
+  // como las muestra el panel; el deslizador avanza de coeficiente en coeficiente.
+  const cantidad = (i) => (v) => {
+    if (!current || mode === "balance") return;
+    const n = parseFloat(v.replace(",", "."));
+    if (isFinite(n)) urlParam.range("ui-r" + (i + 1) + "-slider")(String(Math.round(n / current.rx.r[i][1])));
+  };
+  const alias = (map, f) => (v) => f(map[v] || v);
+  aplicarParametrosUrl({
+    modo:        alias({ ajuste: "balance", lavoisier: "balance", proust: "proust", limitante: "limit" }, urlParam.select("ui-mode-select")),
+    reaccion:    urlParam.select("ui-reaction-select"),
+    escala:      alias({ particula: "particle", "partícula": "particle", mol: "mol" }, urlParam.select("ui-scale-select")),
+    recuento:    urlParam.toggle("ui-live-toggle", (b) => b.classList.contains("is-on")),
+    reactivo1:   cantidad(0),
+    reactivo2:   cantidad(1),
+    rendimiento: urlParam.range("ui-yield-slider"),
+  });
   if (holder && window.ResizeObserver) new ResizeObserver(windowResized).observe(holder);
 }
 
